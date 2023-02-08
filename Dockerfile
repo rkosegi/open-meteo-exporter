@@ -16,6 +16,6 @@ WORKDIR /
 COPY --from=builder /workspace/exporter /
 USER 65532:65532
 
-EXPOSE 9112
+EXPOSE 9113
 
 ENTRYPOINT ["/exporter"]
