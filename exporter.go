@@ -76,7 +76,7 @@ func (e *exporter) onError(err error) {
 func (e *exporter) scrapeTarget(target Location, ch chan<- prometheus.Metric) {
 	var respObj Response
 	if target.TtlMinutes == 0 {
-		target.TtlMinutes = 600
+		target.TtlMinutes = 10
 	}
 
 	var fetch = true
