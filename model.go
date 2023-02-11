@@ -16,6 +16,8 @@ limitations under the License.
 
 package main
 
+import "time"
+
 type CurrentWeather struct {
 	Temperature   float64
 	WindSpeed     float64 `json:"windspeed"`
@@ -29,12 +31,18 @@ type Coordinates struct {
 
 type Location struct {
 	Name        string
+	TtlMinutes  int
 	Coordinates `yaml:",inline"`
 }
 
 type Response struct {
 	Coordinates    `json:",inline"`
 	CurrentWeather CurrentWeather `json:"current_weather"`
+}
+
+type CacheEntry struct {
+	Response   *Response
+	LastUpdate time.Time
 }
 
 type Config struct {

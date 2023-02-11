@@ -33,6 +33,10 @@ const (
 	baseUri   = "https://api.open-meteo.com/v1/forecast"
 )
 
+var (
+	cache = map[string]CacheEntry{}
+)
+
 type exporter struct {
 	logger            log.Logger
 	tempDesc          *prometheus.GaugeVec
@@ -40,6 +44,7 @@ type exporter struct {
 	totalScrapes      prometheus.Counter
 	windSpeedDesc     *prometheus.GaugeVec
 	windDirDesc       *prometheus.GaugeVec
+	cacheHit          *prometheus.CounterVec
 	httpFetchDuration prometheus.Summary
 	httpTraffic       prometheus.Counter
 	config            *Config
@@ -51,6 +56,7 @@ func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.windSpeedDesc.Describe(ch)
 	e.httpFetchDuration.Describe(ch)
 	e.httpTraffic.Describe(ch)
+	e.cacheHit.Describe(ch)
 	e.totalScrapes.Describe(ch)
 	e.scrapeErrors.Describe(ch)
 }
@@ -68,38 +74,58 @@ func (e *exporter) onError(err error) {
 }
 
 func (e *exporter) scrapeTarget(target Location, ch chan<- prometheus.Metric) {
-	var uri = fmt.Sprintf("%s?latitude=%.2f&longitude=%.2f&current_weather=true",
-		baseUri, target.Latitude, target.Longitude)
-
-	req, err := http.NewRequest(http.MethodGet, uri, nil)
-	if err != nil {
-		e.onError(err)
-		return
-	}
-	req.Header.Set("accept", "application/json")
-	req.Header.Set("content-type", "application/json")
-
-	resp, err := e.client.Do(req)
-	if err != nil {
-		e.onError(err)
-		return
-	}
-
-	defer func(body io.Closer) {
-		_ = body.Close()
-	}(resp.Body)
-
-	data, err := io.ReadAll(resp.Body)
-	if err != nil {
-		e.onError(err)
-		return
-	}
-	e.httpTraffic.Add(float64(len(data)))
 	var respObj Response
-	err = json.Unmarshal(data, &respObj)
-	if err != nil {
-		e.onError(err)
-		return
+	if target.TtlMinutes == 0 {
+		target.TtlMinutes = 600
+	}
+
+	var fetch = true
+	last, present := cache[target.Name]
+	if present {
+		if time.Now().Unix() < int64(target.TtlMinutes*60)+last.LastUpdate.Unix() {
+			fetch = false
+			e.cacheHit.WithLabelValues(target.Name).Inc()
+		}
+	}
+	if fetch {
+		var uri = fmt.Sprintf("%s?latitude=%.2f&longitude=%.2f&current_weather=true",
+			baseUri, target.Latitude, target.Longitude)
+
+		req, err := http.NewRequest(http.MethodGet, uri, nil)
+		if err != nil {
+			e.onError(err)
+			return
+		}
+		req.Header.Set("accept", "application/json")
+		req.Header.Set("content-type", "application/json")
+
+		resp, err := e.client.Do(req)
+		if err != nil {
+			e.onError(err)
+			return
+		}
+
+		defer func(body io.Closer) {
+			_ = body.Close()
+		}(resp.Body)
+
+		data, err := io.ReadAll(resp.Body)
+		if err != nil {
+			e.onError(err)
+			return
+		}
+		e.httpTraffic.Add(float64(len(data)))
+		err = json.Unmarshal(data, &respObj)
+		if err != nil {
+			e.onError(err)
+			return
+		}
+		cache[target.Name] = CacheEntry{
+			Response:   &respObj,
+			LastUpdate: time.Now(),
+		}
+	} else {
+		respObj = *last.Response
 	}
 	e.tempDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.Temperature)
 	e.windSpeedDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.WindSpeed)
@@ -108,6 +134,7 @@ func (e *exporter) scrapeTarget(target Location, ch chan<- prometheus.Metric) {
 	e.tempDesc.Collect(ch)
 	e.windSpeedDesc.Collect(ch)
 	e.windDirDesc.Collect(ch)
+	e.cacheHit.Collect(ch)
 }
 
 func (e *exporter) scrape(ch chan<- prometheus.Metric) {
@@ -169,6 +196,12 @@ func (e *exporter) init() {
 		Name:      "http_rx_bytes",
 		Help:      "Total bytes received from api.open-meteo.com",
 	})
+	e.cacheHit = prometheus.NewCounterVec(prometheus.CounterOpts{
+		Namespace: namespace,
+		Subsystem: subsystem,
+		Name:      "cache_hit",
+		Help:      "Total number of times cache was hit",
+	}, []string{"location"})
 	e.client = http.Client{
 		Timeout: time.Second * 30,
 	}
