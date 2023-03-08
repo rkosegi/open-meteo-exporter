@@ -196,12 +196,14 @@ func (e *exporter) init() {
 		Name:      "http_rx_bytes",
 		Help:      "Total bytes received from api.open-meteo.com",
 	})
+
 	e.cacheHit = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Namespace: namespace,
 		Subsystem: subsystem,
 		Name:      "cache_hit",
 		Help:      "Total number of times cache was hit",
 	}, []string{"location"})
+
 	e.client = http.Client{
 		Timeout: time.Second * 30,
 	}
