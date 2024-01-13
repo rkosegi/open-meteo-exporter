@@ -29,7 +29,7 @@ locations:
     longitude: 16.3738
 ```
 
-Start exporter
+Start exporter locally
 
 ```shell
 ./owm-exporter
@@ -38,6 +38,12 @@ ts=2023-02-08T17:31:29.678Z caller=main.go:79 level=info msg="Build context" bui
 ts=2023-02-08T17:31:29.678Z caller=main.go:86 level=info msg="Got 1 targets"
 ts=2023-02-08T17:31:29.680Z caller=tls_config.go:232 level=info msg="Listening on" address=[::]:9113
 ts=2023-02-08T17:31:29.680Z caller=tls_config.go:235 level=info msg="TLS is disabled." http2=false address=[::]:9113
+```
+
+Or using docker
+
+```shell
+docker run -ti -p 9113:9113 -v $(pwd)/config.yaml:/config.yaml:ro ghcr.io/rkosegi/open-meteo-exporter:v1.0.3
 ```
 
 Example collector output from  `http://localhost:9113/metrics`
