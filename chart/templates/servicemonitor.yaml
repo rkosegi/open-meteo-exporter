@@ -11,19 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+{{- if .Values.serviceMonitor.enabled -}}
 ---
-repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: trailing-whitespace
-      - id: check-merge-conflict
-      - id: end-of-file-fixer
-      - id: mixed-line-ending
-  - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.23
-    hooks:
-      - id: golangci-lint
-      - id: goimports
-      - id: gofmt
-      - id: helmlint
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "ome.fullname" . }}
+  labels:
+    {{- include "ome.labels" . | nindent 6 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "ome.selectorLabels" . | nindent 6 }}
+  endpoints:
+    {{- with .Values.serviceMonitor.scrape_config -}}
+      {{ toYaml . | nindent 4 }}
+    {{- end }}
+{{- end }}

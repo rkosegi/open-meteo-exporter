@@ -12,18 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: trailing-whitespace
-      - id: check-merge-conflict
-      - id: end-of-file-fixer
-      - id: mixed-line-ending
-  - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.23
-    hooks:
-      - id: golangci-lint
-      - id: goimports
-      - id: gofmt
-      - id: helmlint
+apiVersion: v1
+data:
+  config.yaml: |
+    locations:
+{{- range .Values.locations }}
+  {{ printf "- name: %s" .name | indent 4 }}
+  {{ printf "  latitude: %f" .latitude | indent 4 }}
+  {{ printf "  longitude: %f" .longitude | indent 4 }}
+{{- end }}
+kind: ConfigMap
+metadata:
+  name: {{ include "ome.fullname" . }}
+  labels:
+    {{- include "ome.labels" . | nindent 4 }}

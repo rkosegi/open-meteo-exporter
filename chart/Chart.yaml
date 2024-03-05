@@ -12,18 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 ---
-repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.5.0
-    hooks:
-      - id: trailing-whitespace
-      - id: check-merge-conflict
-      - id: end-of-file-fixer
-      - id: mixed-line-ending
-  - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.23
-    hooks:
-      - id: golangci-lint
-      - id: goimports
-      - id: gofmt
-      - id: helmlint
+apiVersion: v2
+name: open-meteo-exporter
+description: A Helm chart for Prometheus exporter for open-meteo.com.
+type: application
+version: 1.0.3
+appVersion: v1.0.3
