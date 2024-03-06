@@ -67,7 +67,7 @@ gen-docs:
 	cd chart && frigate gen . > README.md
 
 build-docker:
-	docker build -t "$(IMAGE_NAME):$(VERSION)" \
+	docker build -t "$(IMAGE_NAME):v$(VERSION)" \
 		--build-arg VERSION=$(VERSION) \
 		--build-arg GIT_COMMIT=$(GIT_COMMIT) \
 		--build-arg BUILD_DATE=$(BUILD_DATE) \
