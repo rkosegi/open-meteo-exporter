@@ -21,13 +21,15 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/prometheus/client_golang/prometheus/collectors/version"
+
 	"github.com/alecthomas/kingpin/v2"
 	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/promlog/flag"
-	"github.com/prometheus/common/version"
+	pv "github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
 	"gopkg.in/yaml.v3"
@@ -68,15 +70,15 @@ func main() {
 	exp.init()
 	promlogConfig := &promlog.Config{}
 	flag.AddFlags(kingpin.CommandLine, promlogConfig)
-	kingpin.Version(version.Print(name))
+	kingpin.Version(pv.Print(name))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
 	logger := promlog.New(promlogConfig)
 	level.Info(logger).Log("msg", fmt.Sprintf("Starting %s", name),
-		"version", version.Info(),
+		"version", pv.Info(),
 		"config", *cfgFile)
-	level.Info(logger).Log("msg", "Build context", "build_context", version.BuildContext())
+	level.Info(logger).Log("msg", "Build context", "build_context", pv.BuildContext())
 
 	config, err := loadConfig(*cfgFile)
 	if err != nil {
