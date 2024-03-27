@@ -135,7 +135,6 @@ func (e *exporter) scrapeTarget(target Location, ch chan<- prometheus.Metric) {
 		respObj = *last.Response
 	}
 	e.tempDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.Temperature)
-	e.windSpeedDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.WindSpeed)
 	e.windDirDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.WindDirection)
 	e.windSpeedDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.WindSpeed)
 	e.RHumidityDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.RHumidity)
