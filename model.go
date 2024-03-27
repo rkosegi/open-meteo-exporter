@@ -22,6 +22,9 @@ type CurrentWeather struct {
 	Temperature   float64
 	WindSpeed     float64 `json:"windspeed"`
 	WindDirection float64 `json:"winddirection"`
+	RHumidity float64 `json:"relative_humidity_2m"`
+	Precipitation   float64 `json:"precipitation"`
+	WeatherCode     string  `json:"weather_code"`
 }
 
 type Coordinates struct {
@@ -37,7 +40,7 @@ type Location struct {
 
 type Response struct {
 	Coordinates    `json:",inline"`
-	CurrentWeather CurrentWeather `json:"current_weather"`
+	CurrentWeather CurrentWeather `json:"current"`
 }
 
 type CacheEntry struct {
