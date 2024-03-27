@@ -41,6 +41,9 @@ var (
 type exporter struct {
 	logger            log.Logger
 	tempDesc          *prometheus.GaugeVec
+	RHumidityDesc	  *prometheus.GaugeVec
+	PrecipitationDesc *prometheus.GaugeVec
+	WeatherCodeDesc	  *prometheus.GeugeVec
 	scrapeErrors      prometheus.Counter
 	totalScrapes      prometheus.Counter
 	windSpeedDesc     *prometheus.GaugeVec
@@ -54,6 +57,9 @@ type exporter struct {
 
 func (e *exporter) Describe(ch chan<- *prometheus.Desc) {
 	e.tempDesc.Describe(ch)
+	e.RHumidityDesc.Describe(ch)
+	e.PrecipitationDesc.Describe(ch)
+	e.WeatherCodeDesc.Describe(ch)
 	e.windSpeedDesc.Describe(ch)
 	e.httpFetchDuration.Describe(ch)
 	e.httpTraffic.Describe(ch)
@@ -131,8 +137,15 @@ func (e *exporter) scrapeTarget(target Location, ch chan<- prometheus.Metric) {
 	e.tempDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.Temperature)
 	e.windSpeedDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.WindSpeed)
 	e.windDirDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.WindDirection)
+	e.windSpeedDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.WindSpeed)
+	e.RHumidityDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.RHumidity)
+	e.PrecipitationDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.Precipitation)
+	e.WeatherCodeDesc.WithLabelValues(target.Name).Set(respObj.CurrentWeather.WeatherCode) 
 
 	e.tempDesc.Collect(ch)
+	e.RHumidityDesc.Collect(ch)
+	e.precipitationDesc.Collect(ch)
+	e.weatherCodeDesc.Collect(ch)
 	e.windSpeedDesc.Collect(ch)
 	e.windDirDesc.Collect(ch)
 	e.cacheHit.Collect(ch)
@@ -154,6 +167,27 @@ func (e *exporter) init() {
 		Subsystem: "current",
 		Name:      "temperature",
 		Help:      "The current temperature.",
+	}, []string{"location"})
+	
+	e.RHumidityDesc = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Subsystem: "current",
+		Name:      "relative_humidity",
+		Help:      "The current relative humidity.",
+	}, []string{"location"})
+
+	e.PrecipitationDesc = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Subsystem: "current",
+		Name:      "precipitation",
+		Help:      "The current precipitation.",
+	}, []string{"location"})
+
+	e.WeatherCodeDesc = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Namespace: namespace,
+		Subsystem: "current",
+		Name:      "weather_code",
+		Help:      "The current weather code, cf open-meteo documentation.",
 	}, []string{"location"})
 
 	e.windSpeedDesc = prometheus.NewGaugeVec(prometheus.GaugeOpts{
