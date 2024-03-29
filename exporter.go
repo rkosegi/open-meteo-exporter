@@ -43,7 +43,7 @@ type exporter struct {
 	tempDesc          *prometheus.GaugeVec
 	RHumidityDesc	  *prometheus.GaugeVec
 	PrecipitationDesc *prometheus.GaugeVec
-	WeatherCodeDesc	  *prometheus.GeugeVec
+	WeatherCodeDesc	  *prometheus.GaugeVec
 	scrapeErrors      prometheus.Counter
 	totalScrapes      prometheus.Counter
 	windSpeedDesc     *prometheus.GaugeVec
