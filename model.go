@@ -22,9 +22,9 @@ type CurrentWeather struct {
 	Temperature   float64
 	WindSpeed     float64 `json:"windspeed"`
 	WindDirection float64 `json:"winddirection"`
-	RHumidity float64 `json:"relative_humidity_2m"`
-	Precipitation   float64 `json:"precipitation"`
-	WeatherCode     string  `json:"weather_code"`
+	RHumidity     float64 `json:"relative_humidity_2m"`
+	Precipitation float64 `json:"precipitation"`
+	WeatherCode   float64  `json:"weather_code"`
 }
 
 type Coordinates struct {
