@@ -186,7 +186,7 @@ func (e *exporter) init() {
 		Namespace: namespace,
 		Subsystem: "current",
 		Name:      "weather_code",
-		Help:      "The current weather code, cf open-meteo documentation.",
+		Help:      "The current weather code, cf open meteo documentation.",
 	}, []string{"location"})
 
 	e.windSpeedDesc = prometheus.NewGaugeVec(prometheus.GaugeOpts{
