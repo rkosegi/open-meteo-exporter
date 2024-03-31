@@ -95,7 +95,7 @@ func (e *exporter) scrapeTarget(target Location, ch chan<- prometheus.Metric) {
 		}
 	}
 	if fetch {
-		var uri = fmt.Sprintf("%s?latitude=%.2f&longitude=%.2f&current_weather=true",
+		var uri = fmt.Sprintf("%s?latitude=%.2f&longitude=%.2f&current=true",
 			baseUri, target.Latitude, target.Longitude)
 
 		req, err := http.NewRequest(http.MethodGet, uri, nil)
