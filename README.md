@@ -25,9 +25,12 @@ Here is example `config.yaml`:
 ---
 locations:
   - name: Vienna
+    method: alt
     latitude: 48.2082
     longitude: 16.3738
 ```
+
+_Note `method` field. It could be either `default` or `alt`, or omitted all together. This field controls how data are fetched and processed from API. The `alt` provides more details._
 
 Start exporter locally
 
