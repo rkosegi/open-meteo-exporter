@@ -20,6 +20,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/rkosegi/open-meteo-exporter/internal"
+	"github.com/rkosegi/open-meteo-exporter/types"
 
 	"github.com/prometheus/client_golang/prometheus/collectors/version"
 
@@ -40,21 +46,25 @@ const (
 )
 
 var (
-	webConfig = webflag.AddFlags(kingpin.CommandLine, ":9113")
-	cfgFile   = kingpin.Flag(
+	cfgFile = kingpin.Flag(
 		"config-file",
 		"Path to config file.",
 	).Default("config.yaml").String()
-	metricsPath = kingpin.Flag(
+	toolkitFlags = webflag.AddFlags(kingpin.CommandLine, ":9113")
+
+	metricPath = kingpin.Flag(
 		"web.telemetry-path",
 		"Path under which to expose metrics.",
 	).Default("/metrics").String()
 
-	exp = &exporter{}
+	disableDefaultMetrics = kingpin.Flag(
+		"disable-default-metrics",
+		"Exclude default metrics about the exporter itself (promhttp_*, process_*, go_*).",
+	).Bool()
 )
 
-func loadConfig(cfgFile string) (*Config, error) {
-	var cfg Config
+func loadConfig(cfgFile string) (*types.Config, error) {
+	var cfg types.Config
 	data, err := os.ReadFile(cfgFile)
 	if err != nil {
 		return nil, err
@@ -67,7 +77,6 @@ func loadConfig(cfgFile string) (*Config, error) {
 }
 
 func main() {
-	exp.init()
 	promlogConfig := &promlog.Config{}
 	flag.AddFlags(kingpin.CommandLine, promlogConfig)
 	kingpin.Version(pv.Print(name))
@@ -87,30 +96,60 @@ func main() {
 
 	level.Info(logger).Log("msg", fmt.Sprintf("Got %d targets", len(config.Locations)))
 
-	var landingPage = []byte(`<html>
-<head><title>Open Meteo exporter</title></head>
-<body>
-<h1>Open Meteo exporter</h1>
-<p><a href='` + *metricsPath + `'>Metrics</a></p>
-</body>
-</html>
-`)
+	r := prometheus.NewRegistry()
+	r.MustRegister(version.NewCollector(name))
 
-	prometheus.MustRegister(exp)
-	prometheus.MustRegister(version.NewCollector(name))
+	if err := r.Register(internal.NewExporter(config, logger)); err != nil {
+		level.Error(logger).Log("msg", "Couldn't register "+name, "err", err)
+		os.Exit(1)
+	}
 
-	exp.config = config
-	exp.logger = logger
-	exp.init()
-	http.Handle(*metricsPath, promhttp.Handler())
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		if _, err = w.Write(landingPage); err != nil {
-			level.Error(logger).Log("msg", "Unable to write page content", "err", err)
-		}
+	handler := promhttp.HandlerFor(
+		prometheus.Gatherers{r},
+		promhttp.HandlerOpts{
+			ErrorHandling: promhttp.ContinueOnError,
+		},
+	)
+
+	if !*disableDefaultMetrics {
+		r.MustRegister(collectors.NewGoCollector())
+		r.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+		handler = promhttp.InstrumentMetricHandler(
+			r, handler,
+		)
+	}
+	landingPage, err := web.NewLandingPage(web.LandingConfig{
+		Name:        strings.ReplaceAll(name, "_", " "),
+		Description: "Prometheus exporter for open-meteo.com",
+		Version:     pv.Info(),
+		Links: []web.LandingLinks{
+			{
+				Address: *metricPath,
+				Text:    "Metrics",
+			},
+			{
+				Address: "/health",
+				Text:    "Health",
+			},
+		},
 	})
+	if err != nil {
+		level.Error(logger).Log("msg", "Couldn't create landing page", "err", err)
+		os.Exit(1)
+	}
 
-	srv := &http.Server{}
-	if err = web.ListenAndServe(srv, webConfig, logger); err != nil {
-		panic(err)
+	http.Handle("/", landingPage)
+	http.HandleFunc("/health", func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte("OK"))
+	})
+	http.Handle(*metricPath, handler)
+
+	srv := &http.Server{
+		ReadHeaderTimeout: 10 * time.Second,
+	}
+	if err := web.ListenAndServe(srv, toolkitFlags, logger); err != nil {
+		level.Error(logger).Log("msg", "Error starting server", "err", err)
+		os.Exit(1)
 	}
 }
