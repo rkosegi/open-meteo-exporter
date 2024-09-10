@@ -18,13 +18,12 @@
 package internal
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
 	"github.com/rkosegi/open-meteo-exporter/types"
 
-	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -35,7 +34,7 @@ const (
 )
 
 type exporter struct {
-	logger       log.Logger
+	logger       *slog.Logger
 	scrapeErrors prometheus.Counter
 	totalScrapes prometheus.Counter
 
@@ -90,7 +89,7 @@ func (e *exporter) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (e *exporter) onError(err error) {
-	level.Error(e.logger).Log("msg", "Error while fetching data", "error", err)
+	e.logger.Error("Error while fetching data", "error", err)
 	e.scrapeErrors.Inc()
 }
 
@@ -259,7 +258,7 @@ func (e *exporter) init() {
 	}
 }
 
-func NewExporter(config *types.Config, logger log.Logger) prometheus.Collector {
+func NewExporter(config *types.Config, logger *slog.Logger) prometheus.Collector {
 	e := &exporter{
 		logger: logger,
 		config: config,
