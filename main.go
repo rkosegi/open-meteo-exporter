@@ -30,11 +30,10 @@ import (
 	"github.com/prometheus/client_golang/prometheus/collectors/version"
 
 	"github.com/alecthomas/kingpin/v2"
-	"github.com/go-kit/log/level"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/prometheus/common/promlog"
-	"github.com/prometheus/common/promlog/flag"
+	"github.com/prometheus/common/promslog"
+	"github.com/prometheus/common/promslog/flag"
 	pv "github.com/prometheus/common/version"
 	"github.com/prometheus/exporter-toolkit/web"
 	webflag "github.com/prometheus/exporter-toolkit/web/kingpinflag"
@@ -77,30 +76,30 @@ func loadConfig(cfgFile string) (*types.Config, error) {
 }
 
 func main() {
-	promlogConfig := &promlog.Config{}
+	promlogConfig := &promslog.Config{}
 	flag.AddFlags(kingpin.CommandLine, promlogConfig)
 	kingpin.Version(pv.Print(name))
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
-	logger := promlog.New(promlogConfig)
-	level.Info(logger).Log("msg", fmt.Sprintf("Starting %s", name),
+	logger := promslog.New(promlogConfig)
+	logger.Info(fmt.Sprintf("Starting %s", name),
 		"version", pv.Info(),
 		"config", *cfgFile)
-	level.Info(logger).Log("msg", "Build context", "build_context", pv.BuildContext())
+	logger.Info("Build context", "build_context", pv.BuildContext())
 
 	config, err := loadConfig(*cfgFile)
 	if err != nil {
 		panic(err)
 	}
 
-	level.Info(logger).Log("msg", fmt.Sprintf("Got %d targets", len(config.Locations)))
+	logger.Info(fmt.Sprintf("Got %d targets", len(config.Locations)))
 
 	r := prometheus.NewRegistry()
 	r.MustRegister(version.NewCollector(name))
 
 	if err := r.Register(internal.NewExporter(config, logger)); err != nil {
-		level.Error(logger).Log("msg", "Couldn't register "+name, "err", err)
+		logger.Error("Couldn't register "+name, "err", err)
 		os.Exit(1)
 	}
 
@@ -134,7 +133,7 @@ func main() {
 		},
 	})
 	if err != nil {
-		level.Error(logger).Log("msg", "Couldn't create landing page", "err", err)
+		logger.Error("Couldn't create landing page", "err", err)
 		os.Exit(1)
 	}
 
@@ -149,7 +148,7 @@ func main() {
 		ReadHeaderTimeout: 10 * time.Second,
 	}
 	if err := web.ListenAndServe(srv, toolkitFlags, logger); err != nil {
-		level.Error(logger).Log("msg", "Error starting server", "err", err)
+		logger.Error("Error starting server", "err", err)
 		os.Exit(1)
 	}
 }
