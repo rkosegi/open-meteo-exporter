@@ -14,7 +14,7 @@
 
 module github.com/rkosegi/open-meteo-exporter
 
-go 1.22
+go 1.23
 
 require (
 	github.com/alecthomas/kingpin/v2 v2.4.0
