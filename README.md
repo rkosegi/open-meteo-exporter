@@ -2,6 +2,11 @@
 
 This is prometheus exporter for [Open Meteo](https://open-meteo.com/) current conditions at particular place.
 
+<h2 style="color: red">⚠ Deprecation warning ⚠ </h2>
+
+This project is going to be archived soon. All functionality that this repo provides (and more) can be achieved with [universal exporter](https://github.com/rkosegi/universal-exporter).
+Please check [example configuration](https://github.com/rkosegi/universal-exporter/blob/main/examples/config-openmeteo.yaml) to get you started.
+
 ### Building
 
 #### Docker build
